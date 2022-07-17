@@ -94,6 +94,19 @@ main :: proc() {
     glfw.RestoreWindow(win.win);
     gl.Enable(gl.DEPTH_TEST);
     
+    obj: gl_render_object = load_shader_from_disk("D:\\vgo\\content\\shaders\\test.vertex", "D:\\vgo\\content\\shaders\\test.frag");
+    
+    vertices: []f32 = {
+        0.5, -0.5, 0.0, 
+        -0.5, -0.5, 0.0,
+        0.0,  0.5, 0.0  
+    };
+    
+    if(!bind_render_data(&obj, vertices)) {
+        fmt.println("failed to generate render object");
+        return;
+    }
+    
     for {
         if(glfw.WindowShouldClose(win.win)) {
             break;
@@ -101,10 +114,14 @@ main :: proc() {
         
         glfw_input(win.win);
         
-        view_context_transform();
-        
         gl.ClearColor(win.col.x, win.col.y, win.col.z, win.col.w);
         gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+        //view_context_transform();
+        
+        gl.UseProgram(obj.program.id);
+        gl.BindVertexArray(obj.data.vao);
+        gl.DrawArrays(gl.TRIANGLES, 0, 3);
         
         glfw.SwapBuffers(win.win);
         glfw.PollEvents();
