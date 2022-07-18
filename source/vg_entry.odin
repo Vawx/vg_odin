@@ -17,41 +17,6 @@ window :: struct {
 
 win: window;
 
-view_context :: struct {
-    location: v3,
-    front: v3,
-    up: v3,
-    right: v3,
-    yaw: f32,
-    pitch: f32,
-    fov: f32,
-    view: m4,
-    projection: m4,
-};
-
-view: view_context;
-
-view_context_transform :: proc() {
-    view.front = V3d(0);
-    view.front.x = math.cos(math.to_radians(view.yaw)) * math.cos(math.to_radians(view.pitch));
-    view.front.y = math.sin(math.to_radians(view.pitch));
-    view.front.z = math.sin(math.to_radians(view.yaw)) * math.cos(math.to_radians(view.pitch));
-    view.front = v3_norm(view.front);
-    view.right = v3_norm(v3_cross(view.front, view.up));
-    view.up = v3_norm(v3_cross(view.right, view.front));
-    
-    view.view = M4d(1);
-    view.projection = M4d(1);
-    view.projection = m4_mult(view.projection, perspective(math.to_radians(view.fov), cast(f32)win.size[0] / cast(f32)win.size[1], 1, 3000));
-    view.view = lookat(view.location, v3_add(view.location, view.front), view.up);
-}
-
-view_context_push_to :: proc(shader: ^gl_program) {
-    gl.UseProgram(shader.id);
-    gl_set_m4(shader, "u_projection", view.projection);
-    gl_set_m4(shader, "u_view", view.view);
-}
-
 glfw_input :: proc(win: glfw.WindowHandle) {
     
 }
@@ -75,12 +40,7 @@ main :: proc() {
     win.size[1] = 1080;
     win.col = V4(1.0, 0.25, 0.25, 1.0);
     
-    view.location = V3(0, 0, 3);
-    view.yaw = -90;
-    view.pitch = 0;
-    view.fov = 70;
-    view.up = V3(0, 1, 0);
-    view.front = V3(0, 0, -1);
+    vg_scene_context_init();
     
     glfw.Init();
     win.win = glfw.CreateWindow(win.size[0], win.size[1], "odin vg", win.monitor_handle, nil);
@@ -101,10 +61,8 @@ main :: proc() {
     gl.Enable(gl.DEPTH_TEST);
     
     obj: gl_render_object = load_shader_from_disk("D:\\vgo\\content\\shaders\\test.vertex", "D:\\vgo\\content\\shaders\\test.frag");
-    fbx_obj: ^vg_fbx.mesh_object = vg_fbx.ufbx_get_mesh_data("C:\\Users\\kyle\\Desktop\\New folder\\cube.fbx");
-    if(!bind_render_data(&obj, auto_cast fbx_obj.vertices, fbx_obj.vertices_size, auto_cast fbx_obj.indices, fbx_obj.indices_size)) {
-        fmt.println("failed to bind render data");
-    }
+    //vg_shape_cube(&obj);
+    vg_shape_sphere(&obj);
     
     positions: [dynamic]v3;
     append(&positions, V3( 0.0,  0.0,  0.0));
@@ -133,7 +91,6 @@ main :: proc() {
         view_context_transform();
         view_context_push_to(&obj.program);
         
-        gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.data.ebo);
         for i := 0; i < len(positions); i += 1 {
             angle += 0.10;
             
@@ -143,7 +100,22 @@ main :: proc() {
             model = m4_mult(model, scale(V3d(1.0)));
             gl_set_m4(&obj.program, "u_model", model);
             
-            gl.DrawElements(gl.TRIANGLES, obj.data.indice_count, gl.UNSIGNED_INT, nil);
+            mode: u32 = gl_get_render_mode(obj.mode);
+            if(mode == gl.TRIANGLES) {
+                if(obj.data.ebo > 0) {
+                    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.data.ebo);
+                    gl.DrawElements(mode, obj.data.indice_count, gl.UNSIGNED_INT, nil);
+                } else {
+                    gl.BindVertexArray(obj.data.vao);
+                    gl.DrawArrays(mode, 0, obj.data.indice_count);
+                }
+            }
+            if(mode == gl.TRIANGLE_STRIP) {
+                if(obj.data.ebo > 0) {
+                    gl.BindVertexArray(obj.data.vao);
+                    gl.DrawElements(mode, obj.data.indice_count, gl.UNSIGNED_INT, nil);
+                }
+            }
         }
         
         glfw.SwapBuffers(win.win);

@@ -22,9 +22,43 @@ gl_render_data :: struct {
     indice_count: i32,
 }
 
+gl_render_object_mode :: enum {
+    points,
+    line_strip,
+    line_loop,
+    lines,
+    line_strip_adjacency,
+    line_adjacency,
+    triangle_strip,
+    triangle_fan,
+    triangles,
+    triangle_strip_adjacency,
+    triangles_adjacency,
+    patches
+};
+
+gl_get_render_mode :: proc(mode: gl_render_object_mode) -> u32 {
+    switch mode {
+        case .points: {return gl.POINTS;}
+        case .line_strip: {return gl.LINE_STRIP;}
+        case .line_loop: {return gl.LINE_LOOP;}
+        case .lines: {return gl.LINES;}
+        case .line_strip_adjacency: {return gl.LINE_STRIP_ADJACENCY;}
+        case .line_adjacency: {return gl.LINES_ADJACENCY;}
+        case .triangle_strip: {return gl.TRIANGLE_STRIP;}
+        case .triangle_fan: {return gl.TRIANGLE_FAN;}
+        case .triangles: {return gl.TRIANGLES;}
+        case .triangle_strip_adjacency: {return gl.TRIANGLE_STRIP_ADJACENCY;}
+        case .triangles_adjacency: {return gl.TRIANGLES_ADJACENCY;}
+        case .patches: {return gl.PATCHES;}
+    }
+    return 0;
+}
+
 gl_render_object :: struct {
     data: gl_render_data,
-    program: gl_program
+    program: gl_program,
+    mode: gl_render_object_mode
 } 
 
 gl_check_compile_errors :: proc(id: u32,  is_shader: u8) {
@@ -96,6 +130,7 @@ load_shader_from_disk :: proc(vert_path: string, frag_path: string) -> gl_render
     os.close(vert_f);
     os.close(frag_f);
     
+    result.mode = .triangles;
     return result;
 }
 
