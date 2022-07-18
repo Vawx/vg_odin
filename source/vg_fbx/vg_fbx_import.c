@@ -1,7 +1,8 @@
 #include "vg_fbx_import.h"
 
 ufbx_import_scene ufbx_import_load_fbx_scene(const char* filename) {
-	ufbx_import_scene import_scene = {0};
+	printf("import load fbx scene %s\n", filename);
+    ufbx_import_scene import_scene = {0};
 	import_scene.allocator = make_allocator(mega(128));
 	
 	ufbx_load_opts opts = {0};
@@ -52,3 +53,33 @@ ufbx_import_scene ufbx_import_load_fbx_scene(const char* filename) {
 	ufbx_free_scene(scene);
 	return import_scene;
 }
+
+mesh_object* ufbx_get_mesh_data(ufbx_import_scene* scene) {
+    if(scene && scene->meshes.size) {
+        printf("fbx scene is valid has [%d] meshes\n", scene->meshes.size / (s32)sizeof(ufbx_import_mesh));
+        
+        const s32 mesh_count = scene->meshes.size / sizeof(ufbx_import_mesh);
+        mesh_object* r = (mesh_object*)allocate(sizeof(mesh_object) * mesh_count);
+        mesh_object* r_ptr = r;
+        
+        for(s32 i = 0; i < mesh_count; ++i) {
+            ufbx_import_mesh_part* part = (ufbx_import_mesh_part*)((ufbx_import_mesh*)scene->meshes.s_ptr)->parts.s_ptr;
+            
+            r_ptr->vertices = (u8*)part->vertex_buffer.s_ptr;
+            r_ptr->indices = (u8*)part->index_buffer.s_ptr;
+            r_ptr->vertices_size = buffer_used(&part->vertex_buffer);
+            r_ptr->indices_size = buffer_used(&part->index_buffer);
+            
+            printf("getting mesh data vertices[%d], indices[%d]\n", r_ptr->vertices_size, r_ptr->indices_size);
+            r_ptr++;
+        }
+        return r;
+    } 
+    if(scene) {
+        printf("fbx scene is valid but has [%d] meshes and has a type size of [%d]\n", scene->meshes.size, scene->meshes.type_size);
+    } else {
+        printf("trying to load fbx scene but scene is invalid.\n");
+    }
+    return NULL;
+}
+

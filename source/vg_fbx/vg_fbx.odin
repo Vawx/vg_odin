@@ -16,14 +16,22 @@ when ODIN_OS == .Windows {
         size: u32,
     };
     
-    vg_fbx_import_scene :: struct {
+    import_scene :: struct {
         nodes: vg_buffer, // ufbx_import_node
         meshes: vg_buffer, // ufbx_import_mesh
         file_path: cstring,
         allocator: vg_allocator,
     };
     
+    mesh_object :: struct {
+        vertices: rawptr,
+        vertices_size: i32,
+        indices: rawptr,
+        indices_size: i32,
+    };
+    
     foreign vg_fbx {
-        ufbx_import_load_fbx_scene::proc(filename: cstring) -> vg_fbx_import_scene ---
+        ufbx_import_load_fbx_scene::proc(filename: cstring) -> import_scene ---;
+        ufbx_get_mesh_data::proc(file_path: cstring) -> ^mesh_object ---;
     }
 }

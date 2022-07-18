@@ -5,6 +5,12 @@ import "core:os"
 import "core:strings";
 import gl "vendor:OpenGL"
 
+mesh_vertex :: struct {
+    position: v3,
+    normal: v3,
+    uv: v2,
+};
+
 gl_program :: struct {
     id: u32,
 }
@@ -13,12 +19,31 @@ gl_render_data :: struct {
     vbo: u32,
     vao: u32,
     ebo: u32,
+    indice_count: i32,
 }
 
 gl_render_object :: struct {
     data: gl_render_data,
     program: gl_program
 } 
+
+gl_check_compile_errors :: proc(id: u32,  is_shader: u8) {
+	success: i32 = 0;
+	info: [1024]u8;
+	if (is_shader == 1) {
+		gl.GetShaderiv(id, gl.COMPILE_STATUS, &success);
+		if (success == 0) {
+			gl.GetShaderInfoLog(id, 1024, nil, &info[0]);
+			fmt.println("open gl shader error: ", info);
+		}
+	} else {
+		gl.GetProgramiv(id, gl.LINK_STATUS, &success);
+		if (success == 0) {
+			gl.GetProgramInfoLog(id, 1024, nil, &info[0]);
+			fmt.println("open gl program error: ", info);
+		}
+	}
+}
 
 load_shader_from_disk :: proc(vert_path: string, frag_path: string) -> gl_render_object {
     result: gl_render_object;
@@ -74,20 +99,83 @@ load_shader_from_disk :: proc(vert_path: string, frag_path: string) -> gl_render
     return result;
 }
 
-bind_render_data :: proc(render_obj: ^gl_render_object, vertices: []f32, indices: []i32) -> bool {
+bind_render_data :: proc(render_obj: ^gl_render_object, vertices: ^f32, vertice_size: i32, indices: ^i32, indices_size: i32) -> bool {
     gl.GenVertexArrays(1, &render_obj.data.vao);
     gl.GenBuffers(1, &render_obj.data.vbo);
+    gl.GenBuffers(1, &render_obj.data.ebo);
     gl.BindVertexArray(render_obj.data.vao);
     
     gl.BindBuffer(gl.ARRAY_BUFFER, render_obj.data.vbo);
-    len: i32 = auto_cast len(vertices);
-    size: i32 = auto_cast len * size_of(f32);
-    gl.BufferData(gl.ARRAY_BUFFER, auto_cast size, &vertices[0], gl.STATIC_DRAW);
+    gl.BufferData(gl.ARRAY_BUFFER, auto_cast vertice_size, vertices, gl.STATIC_DRAW);
     
-    //TODO file data with indices
+    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, render_obj.data.ebo);
+    gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, auto_cast indices_size, indices, gl.STATIC_DRAW);
     
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), auto_cast 0);
     gl.EnableVertexAttribArray(0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, size_of(mesh_vertex), 0);
+    gl.EnableVertexAttribArray(1);
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, size_of(mesh_vertex), size_of(v3));
+    gl.EnableVertexAttribArray(2);
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, size_of(mesh_vertex), size_of(v3) + size_of(v3));
     
+    render_obj.data.indice_count = indices_size / size_of(i32);
     return render_obj.data.vao > 0 && render_obj.data.vbo > 0 && render_obj.program.id > 0;
+}
+
+gl_set_bool :: proc(shader: ^gl_program, name: cstring,  value: u8) {         
+	gl.Uniform1i(gl.GetUniformLocation(shader.id, name), auto_cast value); 
+}
+
+gl_set_int :: proc(shader: ^gl_program, name: cstring,  value: i32) { 
+	gl.Uniform1i(gl.GetUniformLocation(shader.id, name), value); 
+}
+
+gl_set_real :: proc(shader: ^gl_program, name: cstring, value: f32) { 
+	gl.Uniform1f(gl.GetUniformLocation(shader.id, name), value); 
+}
+
+gl_set_v2 :: proc(shader: ^gl_program, name: cstring, value: v2) { 
+    arr: [dynamic]f32;
+    append(&arr, value.x);
+    append(&arr, value.y);
+	gl.Uniform2fv(gl.GetUniformLocation(shader.id, name), 1, &arr[0]); 
+}
+
+gl_set_v2f :: proc(shader: ^gl_program, name: cstring, x, y: f32) { 
+	gl.Uniform2f(gl.GetUniformLocation(shader.id, name), x, y); 
+}
+
+gl_set_v3 :: proc(shader: ^gl_program, name: cstring,  value: v3) { 
+    arr: [dynamic]f32;
+    append(&arr, value.x);
+    append(&arr, value.y);
+    append(&arr, value.z);
+	gl.Uniform3fv(gl.GetUniformLocation(shader.id, name), 1, &arr[0]); 
+}
+
+gl_set_v3f :: proc(shader: ^gl_program, name: cstring, x, y, z: f32){ 
+	gl.Uniform3f(gl.GetUniformLocation(shader.id, name), x, y, z); 
+}
+
+gl_set_v4 :: proc(shader: ^gl_program, name: cstring,  value: v4) { 
+    arr: [dynamic]f32;
+    append(&arr, value.x);
+    append(&arr, value.y);
+    append(&arr, value.z);
+    append(&arr, value.w);
+	gl.Uniform4fv(gl.GetUniformLocation(shader.id, name), 1, &arr[0]); 
+}
+
+gl_set_v4f :: proc(shader: ^gl_program, name: cstring,  x, y, z, w: f32) { 
+	gl.Uniform4f(gl.GetUniformLocation(shader.id, name), x, y, z, w); 
+}
+
+gl_set_m4 :: proc(shader: ^gl_program, name: cstring, mat: m4) {
+    arr: [dynamic]f32;
+    for i := 0; i < 4; i += 1 {
+        for j := 0; j < 4; j += 1 {
+            append(&arr, mat.elements[i][j]);
+        }
+    }
+	gl.UniformMatrix4fv(gl.GetUniformLocation(shader.id, name), 1, gl.FALSE, &arr[0]);
 }

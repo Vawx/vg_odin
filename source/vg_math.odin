@@ -295,6 +295,7 @@ V4 :: proc(x, y, z, w: f32) -> v4 {
 
 // mat4
 
+
 m4 :: struct {
     elements: [4][4]f32,
 }
@@ -315,13 +316,10 @@ M4d :: proc(v: f32) -> m4 {
 
 
 m4_mult :: proc (left: m4, right: m4) -> m4 {
-    r: m4;
-    columns: i32;
+    r: m4 = M4d(1.0);
     for columns := 0; columns < 4; columns += 1 {
-        rows: i32;
         for rows := 0; rows < 4; rows += 1 {
             sum: f32 = 0;
-            current_matrice: i32;
             for current_matrice := 0; current_matrice < 4; current_matrice += 1 {
                 sum += left.elements[current_matrice][rows] * right.elements[columns][current_matrice];
             }
@@ -333,7 +331,7 @@ m4_mult :: proc (left: m4, right: m4) -> m4 {
 
 
 ortho :: proc(left: f32, right: f32, bottom: f32, top: f32, n: f32, f: f32) -> m4 {
-    r: m4;
+    r: m4 = M4d(1.0);
     r.elements[0][0] = 2 / (right - left);
     r.elements[1][1] = 2 / (top - bottom);
     r.elements[2][2] = 2 / (n - f);  
@@ -345,7 +343,7 @@ ortho :: proc(left: f32, right: f32, bottom: f32, top: f32, n: f32, f: f32) -> m
 }
 
 perspective :: proc(fov: f32, aspect: f32, n: f32, f: f32) -> m4 {
-    r: m4;
+    r: m4 = M4d(1.0);
     tanHalfFovy: f32 = math.tan(fov / 2);
     r.elements[0][0] = 1 / (aspect * tanHalfFovy);
     r.elements[1][1] = 1 / (tanHalfFovy);
@@ -357,7 +355,7 @@ perspective :: proc(fov: f32, aspect: f32, n: f32, f: f32) -> m4 {
 }
 
 translate :: proc(v: v3) -> m4 {
-    r: m4;
+    r: m4 = M4d(1.0);
     r.elements[3][0] = v.x;
     r.elements[3][1] = v.y;
     r.elements[3][2] = v.z;
@@ -365,12 +363,12 @@ translate :: proc(v: v3) -> m4 {
 }
 
 rotate :: proc(angle: f32, axis: v3) -> m4 {
-    r: m4;
+    r: m4 = M4d(1.0);
     in_axis: v3 = v3_norm(axis);
 	
 	sin_theta: f32  = math.sin(math.to_radians(angle));
 	cos_theta: f32  = math.cos(math.to_radians(angle));
-	cos_value: f32 = 1 - cos_theta;
+	cos_value: f32 = 1.0 - cos_theta;
 	
     r.elements[0][0] = (in_axis.x * in_axis.x * cos_value) + cos_theta;
     r.elements[0][1] = (in_axis.x * in_axis.y * cos_value) + (in_axis.z * sin_theta);
@@ -388,7 +386,7 @@ rotate :: proc(angle: f32, axis: v3) -> m4 {
 }
 
 scale :: proc(scale: v3) -> m4 {
-    r: m4;
+    r: m4 = M4d(1.0);
     r.elements[0][0] = scale.x;
     r.elements[1][1] = scale.y;
     r.elements[2][2] = scale.z;

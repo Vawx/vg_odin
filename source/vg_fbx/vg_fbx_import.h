@@ -626,6 +626,7 @@ INLINE void ufbx_import_read_scene(ufbx_import_scene* import_scene, ufbx_scene* 
 	}
 	
 	import_scene->meshes = request_buffer(&import_scene->allocator, (s32)scene->meshes.count, sizeof(ufbx_import_mesh)); 
+    printf("reading scene. mesh count [%d], mesh type size [%d]\n", (s32)scene->meshes.count, import_scene->meshes.type_size);
 	
 	c = 0;
 	for(u32 i = 0; i < import_scene->meshes.size; i += import_scene->meshes.type_size) {
@@ -693,7 +694,15 @@ INLINE u8* ufbx_import_pack_fbx_scene(ufbx_import_scene* scene, s32* out_vert_si
 	return out_buffer;
 }
 
+typedef struct {
+	u8* vertices;
+	u32 vertices_size;
+	u8* indices;
+	u32 indices_size;
+} mesh_object;
+
 DLL_EXPORT ufbx_import_scene ufbx_import_load_fbx_scene(const char* filename);
+DLL_EXPORT mesh_object* ufbx_get_mesh_data(ufbx_import_scene* scene);
 
 #define VG_FBX_IMPORT_H
 #endif //VG_FBX_IMPORT_H
