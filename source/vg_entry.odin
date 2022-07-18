@@ -60,10 +60,6 @@ main :: proc() {
     glfw.RestoreWindow(win.win);
     gl.Enable(gl.DEPTH_TEST);
     
-    obj: gl_render_object = load_shader_from_disk("D:\\vgo\\content\\shaders\\test.vertex", "D:\\vgo\\content\\shaders\\test.frag");
-    //vg_shape_cube(&obj);
-    vg_shape_sphere(&obj);
-    
     positions: [dynamic]v3;
     append(&positions, V3( 0.0,  0.0,  0.0));
     append(&positions, V3( 2.0,  5.0, -15.0));
@@ -76,7 +72,12 @@ main :: proc() {
     append(&positions, V3( 1.5,  0.2, -1.5));
     append(&positions, V3(-1.3,  1.0, -1.5));
     
-    angle: f32 = 20.0;
+    obj: gl_render_object = load_shader_from_disk("D:\\vgo\\content\\shaders\\test.vertex", "D:\\vgo\\content\\shaders\\test.frag");
+    vg_shape_cube(&obj);
+    for i := 0; i < len(positions); i += 1 {
+        append(&obj.transforms, gl_transform_from_v3(positions[i]));
+    }
+    append(&scene_context.render_objects, obj);
     
     for {
         if(glfw.WindowShouldClose(win.win)) {
@@ -85,38 +86,7 @@ main :: proc() {
         
         glfw_input(win.win);
         
-        gl.ClearColor(win.col.x, win.col.y, win.col.z, win.col.w);
-        gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        
-        view_context_transform();
-        view_context_push_to(&obj.program);
-        
-        for i := 0; i < len(positions); i += 1 {
-            angle += 0.10;
-            
-            model: m4 = M4d(1);
-            model = m4_mult(model, translate(positions[i]));
-            model = m4_mult(model, rotate(angle, V3(1.0, 0.3, 0.5)));
-            model = m4_mult(model, scale(V3d(1.0)));
-            gl_set_m4(&obj.program, "u_model", model);
-            
-            mode: u32 = gl_get_render_mode(obj.mode);
-            if(mode == gl.TRIANGLES) {
-                if(obj.data.ebo > 0) {
-                    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.data.ebo);
-                    gl.DrawElements(mode, obj.data.indice_count, gl.UNSIGNED_INT, nil);
-                } else {
-                    gl.BindVertexArray(obj.data.vao);
-                    gl.DrawArrays(mode, 0, obj.data.indice_count);
-                }
-            }
-            if(mode == gl.TRIANGLE_STRIP) {
-                if(obj.data.ebo > 0) {
-                    gl.BindVertexArray(obj.data.vao);
-                    gl.DrawElements(mode, obj.data.indice_count, gl.UNSIGNED_INT, nil);
-                }
-            }
-        }
+        scene_context_render();
         
         glfw.SwapBuffers(win.win);
         glfw.PollEvents();

@@ -55,10 +55,33 @@ gl_get_render_mode :: proc(mode: gl_render_object_mode) -> u32 {
     return 0;
 }
 
+gl_transform :: struct {
+    location: v3,
+    rotation: v3,
+    scale: v3,
+};
+
+gl_transform_ident :: proc() -> gl_transform {
+    r: gl_transform;
+    r.location = V3d(0.0);
+    r.rotation = V3d(0.0);
+    r.scale = V3d(1.0);
+    return r;
+}
+
+gl_transform_from_v3 :: proc(v: v3) -> gl_transform {
+    r: gl_transform;
+    r.location = v;
+    r.rotation = V3d(0.0);
+    r.scale = V3d(1.0);
+    return r;
+}
+
 gl_render_object :: struct {
     data: gl_render_data,
     program: gl_program,
-    mode: gl_render_object_mode
+    mode: gl_render_object_mode,
+    transforms: [dynamic]gl_transform,
 } 
 
 gl_check_compile_errors :: proc(id: u32,  is_shader: u8) {
