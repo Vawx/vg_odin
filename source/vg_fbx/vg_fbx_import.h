@@ -675,7 +675,7 @@ INLINE u8* ufbx_import_pack_fbx_scene(ufbx_import_scene* scene, s32* out_vert_si
 			}
 		}
 	}
-	
+    
 	s32 vertex_size = (s32)(v_ptr - vertex_buffer);
 	s32 index_size = (s32)(i_ptr - index_buffer);
 	

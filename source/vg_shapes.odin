@@ -68,6 +68,7 @@ vg_shape_cube :: proc(r: ^gl_render_object) {
         
         r.data.indice_count = 36;
         r.mode = .triangles;
+        gl.BindVertexArray(r.data.vao);
     }
 }
 
@@ -156,5 +157,29 @@ vg_shape_sphere :: proc(r: ^gl_render_object) {
         gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, size_of(mesh_vertex), size_of(v3) + size_of(v3));
         
         r.mode = .triangle_strip;
+    }
+}
+
+vg_shape_quad :: proc(r: ^gl_render_object) {
+    if (r.data.vao == 0) {
+        quad_vertices: [20]f32 = {
+            -1.0,  1.0, 0.0, 0.0, 1.0,
+            -1.0, -1.0, 0.0, 0.0, 0.0,
+            1.0,  1.0, 0.0, 1.0, 1.0,
+            1.0, -1.0, 0.0, 1.0, 0.0,
+        };
+        
+        gl.GenVertexArrays(1, &r.data.vao);
+        gl.GenBuffers(1, &r.data.vbo);
+        gl.BindVertexArray(r.data.vao);
+        gl.BindBuffer(gl.ARRAY_BUFFER, r.data.vbo);
+        gl.BufferData(gl.ARRAY_BUFFER, 20 * size_of(f32), &quad_vertices[0], gl.STATIC_DRAW);
+        gl.EnableVertexAttribArray(0);
+        gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 5 * size_of(f32), 0);
+        gl.EnableVertexAttribArray(1);
+        gl.VertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 5 * size_of(f32), 3 * size_of(f32));
+        
+        r.mode = .triangle_strip;
+        r.data.indice_count = 4;
     }
 }

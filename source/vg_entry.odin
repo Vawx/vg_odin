@@ -43,15 +43,16 @@ main :: proc() {
     vg_scene_context_init();
     
     glfw.Init();
-    win.win = glfw.CreateWindow(win.size[0], win.size[1], "odin vg", win.monitor_handle, nil);
-    glfw.MakeContextCurrent(win.win);
-    
-    gl.load_up_to(3, 3, glfw.gl_set_proc_address);                                                                                           
     
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3);
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3);
     glfw.WindowHint(glfw.SAMPLES, 4);
     glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
+    
+    win.win = glfw.CreateWindow(win.size[0], win.size[1], "odin vg", win.monitor_handle, nil);
+    glfw.MakeContextCurrent(win.win);
+    
+    gl.load_up_to(3, 3, glfw.gl_set_proc_address);                                                                                           
     
 	glfw.SetCursorPosCallback(win.win, cast(glfw.CursorPosProc)glfw_mouse);
     glfw.SetFramebufferSizeCallback(win.win, cast(glfw.FramebufferSizeProc)glfw_window_size);
@@ -59,26 +60,36 @@ main :: proc() {
     
     glfw.RestoreWindow(win.win);
     gl.Enable(gl.DEPTH_TEST);
+    gl.DepthFunc(gl.LEQUAL);
+    gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS);
     
-    positions: [dynamic]v3;
-    append(&positions, V3( 0.0,  0.0,  0.0));
-    append(&positions, V3( 2.0,  5.0, -15.0));
-    append(&positions, V3(-1.5, -2.2, -2.5));
-    append(&positions, V3(-3.8, -2.0, -12.3));
-    append(&positions, V3( 2.4, -0.4, -3.5));
-    append(&positions, V3(-1.7,  3.0, -7.5));
-    append(&positions, V3( 1.3, -2.0, -2.5));
-    append(&positions, V3( 1.5,  2.0, -2.5));
-    append(&positions, V3( 1.5,  0.2, -1.5));
-    append(&positions, V3(-1.3,  1.0, -1.5));
+    hdr_context_init();
     
-    obj: gl_render_object = load_shader_from_disk("D:\\vgo\\content\\shaders\\test.vertex", "D:\\vgo\\content\\shaders\\test.frag");
-    vg_shape_cube(&obj);
-    for i := 0; i < len(positions); i += 1 {
-        append(&obj.transforms, gl_transform_from_v3(positions[i]));
+    obj: gl_render_object;
+    obj.program = hdr_context.pbr;
+    vg_shape_sphere(&obj);
+    for row := 0; row < 7; row += 1 {
+        m: f32 = cast(f32)row / 7.0;
+        for col := 0; col < 7; col += 1 {
+            pos: v3 = V3(cast(f32)(cast(f32)col - (7.0 / 2.0)) * 2.5,
+                         cast(f32)(cast(f32)row - (7.0 / 2.0)) * 2.5,
+                         -2.0);
+            append(&obj.transforms, gl_transform_from_v3(pos));
+            r: f32 = clamp(cast(f32)col / 7.0, 0.05, 1.0);
+            
+            attrib: gl_render_attrib;
+            attrib.metallic = m;
+            attrib.roughness = r;
+            append(&obj.render_attrib, attrib);
+        }
     }
     append(&scene_context.render_objects, obj);
     
+    view_context_transform();
+    view_context_push_to(&hdr_context.pbr);
+    view_context_push_to(&hdr_context.background.program);
+    
+    gl.Viewport(0, 0, win.size[0], win.size[1]);
     for {
         if(glfw.WindowShouldClose(win.win)) {
             break;

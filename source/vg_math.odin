@@ -50,6 +50,17 @@ nearly_zero :: proc(a: f32) -> bool {
     return absf(a) <= THOUSANDTH() ? true : false;
 }
 
+clamp :: proc(min: f32, max: f32, v: f32) -> f32 { 
+    r: f32 = v;
+    if(r < min) {
+        r = min;
+    }
+    if(r > max) {
+        r = max;
+    }
+    return r;
+}
+
 // vec 2
 v2 :: struct {
     x, y: f32,

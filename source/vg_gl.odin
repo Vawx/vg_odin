@@ -77,11 +77,17 @@ gl_transform_from_v3 :: proc(v: v3) -> gl_transform {
     return r;
 }
 
+gl_render_attrib :: struct {
+    roughness: f32,
+    metallic: f32,
+}
+
 gl_render_object :: struct {
     data: gl_render_data,
     program: gl_program,
     mode: gl_render_object_mode,
     transforms: [dynamic]gl_transform,
+    render_attrib: [dynamic]gl_render_attrib,
 } 
 
 gl_check_compile_errors :: proc(id: u32,  is_shader: u8) {
@@ -91,15 +97,45 @@ gl_check_compile_errors :: proc(id: u32,  is_shader: u8) {
 		gl.GetShaderiv(id, gl.COMPILE_STATUS, &success);
 		if (success == 0) {
 			gl.GetShaderInfoLog(id, 1024, nil, &info[0]);
-			fmt.println("open gl shader error: ", info);
+            str: cstring = auto_cast &info[0];
+			fmt.println("open gl shader error: ", str);
 		}
 	} else {
 		gl.GetProgramiv(id, gl.LINK_STATUS, &success);
 		if (success == 0) {
 			gl.GetProgramInfoLog(id, 1024, nil, &info[0]);
-			fmt.println("open gl program error: ", info);
+            str: cstring = auto_cast &info[0];
+			fmt.println("open gl program error: ", str);
 		}
 	}
+}
+
+load_shader_from_ptr :: proc(vert_str: cstring, frag_str: cstring) -> gl_program {
+    r: gl_program;
+    
+    vert: u32 = gl.CreateShader(gl.VERTEX_SHADER);
+    vert_len: int = len(vert_str);
+    vert_ptr: cstring = vert_str;
+    gl.ShaderSource(vert, 1, &vert_ptr, auto_cast &vert_len);
+    gl.CompileShader(vert);
+    gl_check_compile_errors(vert, 1);
+    
+    frag: u32 = gl.CreateShader(gl.FRAGMENT_SHADER);
+    frag_len: int = len(frag_str);
+    frag_ptr: cstring = frag_str;
+    gl.ShaderSource(frag, 1, &frag_ptr, auto_cast &frag_len);
+    gl.CompileShader(frag);
+    gl_check_compile_errors(frag, 1);
+    
+    r.id = gl.CreateProgram();
+    gl.AttachShader(r.id, vert);
+    gl.AttachShader(r.id, frag);
+    gl.LinkProgram(r.id);
+    
+    gl.DeleteShader(vert);
+    gl.DeleteShader(frag);
+    
+    return r;
 }
 
 load_shader_from_disk :: proc(vert_path: string, frag_path: string) -> gl_render_object {

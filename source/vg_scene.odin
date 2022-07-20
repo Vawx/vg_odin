@@ -15,20 +15,40 @@ view_context :: struct {
     projection: m4,
 };
 
+scene_light :: struct {
+    pos: v3,
+    col: v3,
+}
+
 vg_scene_context :: struct {
     view: view_context,
     render_objects: [dynamic]gl_render_object,
+    lights: [dynamic]scene_light,
 }
 
 scene_context: vg_scene_context;
 
 vg_scene_context_init :: proc() {
-    scene_context.view.location = V3(0, 0, 30);
+    scene_context.view.location = V3(0, 0, 20);
     scene_context.view.yaw = -90;
     scene_context.view.pitch = 0;
-    scene_context.view.fov = 70;
+    scene_context.view.fov = 40;
     scene_context.view.up = V3(0, 1, 0);
     scene_context.view.front = V3(0, 0, -1);
+    
+    l: scene_light;
+    l.pos = V3(-10, 10, 10);
+    l.col = V3(300, 300, 300);
+    append(&scene_context.lights, l);
+    l.pos = V3(10, 10, 10);
+    l.col = V3(300, 0, 300);
+    append(&scene_context.lights, l);
+    l.pos = V3(-10, -10, 10);
+    l.col = V3(0, 300, 300);
+    append(&scene_context.lights, l);
+    l.pos = V3(10, -10, 10);
+    l.col = V3(300, 300, 0);
+    append(&scene_context.lights, l);
 }
 
 view_context_push_to :: proc(shader: ^gl_program) {
@@ -58,9 +78,20 @@ scene_context_render :: proc() {
     
     view_context_transform();
     
+    // render
     for i := 0; i < len(scene_context.render_objects); i += 1 {
         obj: gl_render_object = scene_context.render_objects[i];
+        
         view_context_push_to(&obj.program);
+        gl_set_real(&obj.program, "metallic", 0.5);
+        gl_set_real(&obj.program, "roughness", 0.5);
+        
+        gl.ActiveTexture(gl.TEXTURE0);
+        gl.BindTexture(gl.TEXTURE_CUBE_MAP, hdr_context.irradiance_map.id);
+        gl.ActiveTexture(gl.TEXTURE1);
+        gl.BindTexture(gl.TEXTURE_CUBE_MAP, hdr_context.prefilter_map.id);
+        gl.ActiveTexture(gl.TEXTURE2);
+        gl.BindTexture(gl.TEXTURE_2D, hdr_context.brdf_map.id);
         
         for j := 0; j < len(obj.transforms); j += 1 {
             model: m4 = M4d(1);
@@ -70,6 +101,8 @@ scene_context_render :: proc() {
             model = m4_mult(model, rotate(obj.transforms[j].rotation.z, V3(0.0, 0.0, 1.0)));
             model = m4_mult(model, scale(obj.transforms[j].scale));
             gl_set_m4(&obj.program, "u_model", model);
+            gl_set_real(&obj.program, "roughness", obj.render_attrib[j].roughness);
+            gl_set_real(&obj.program, "metallic", obj.render_attrib[j].metallic);
             
             mode: u32 = gl_get_render_mode(obj.mode);
             if(mode == gl.TRIANGLES) {
@@ -89,4 +122,37 @@ scene_context_render :: proc() {
             }
         }
     }
+    
+    gl.BindVertexArray(0);
+    
+    pos_str: [4]cstring = {
+        "lightPositions[0]", 
+        "lightPositions[1]", 
+        "lightPositions[2]", 
+        "lightPositions[3]", 
+    };
+    
+    col_str: [4]cstring = {
+        "lightColors[0]", 
+        "lightColors[1]", 
+        "lightColors[2]", 
+        "lightColors[3]", 
+    };
+    
+    for i:= 0; i < len(scene_context.lights); i += 1 {
+        gl_set_v3(&hdr_context.pbr, pos_str[i], scene_context.lights[i].pos);
+        gl_set_v3(&hdr_context.pbr, col_str[i], scene_context.lights[i].col);
+    }
+    
+    gl.UseProgram(hdr_context.background.program.id);
+    view_context_push_to(&hdr_context.background.program);
+    gl.ActiveTexture(gl.TEXTURE0);
+    gl.BindTexture(gl.TEXTURE_CUBE_MAP, hdr_context.cubemap.id);
+    
+    // render background
+    gl.BindVertexArray(hdr_context.background.obj.data.vao);
+    mode: u32 = gl_get_render_mode(hdr_context.background.obj.mode);
+    gl.DrawArrays(mode, 0, hdr_context.background.obj.data.indice_count);
+    gl.BindVertexArray(0);
+    
 }
