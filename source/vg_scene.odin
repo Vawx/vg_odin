@@ -41,13 +41,10 @@ vg_scene_context_init :: proc() {
     l.col = V3(300, 300, 300);
     append(&scene_context.lights, l);
     l.pos = V3(10, 10, 10);
-    l.col = V3(300, 0, 300);
     append(&scene_context.lights, l);
     l.pos = V3(-10, -10, 10);
-    l.col = V3(0, 300, 300);
     append(&scene_context.lights, l);
     l.pos = V3(10, -10, 10);
-    l.col = V3(300, 300, 0);
     append(&scene_context.lights, l);
 }
 

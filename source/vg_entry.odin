@@ -117,7 +117,7 @@ main :: proc() {
                          cast(f32)(cast(f32)row - (7.0 / 2.0)) * 2.5,
                          -2.0);
             append(&obj.transforms, gl_transform_from_v3(pos));
-            r: f32 = clamp(cast(f32)col / 7.0, 0.05, 1.0);
+            r: f32 = clamp(0.05, 1.0, cast(f32)col / 7.0);
             
             attrib: gl_render_attrib;
             attrib.metallic = m;
