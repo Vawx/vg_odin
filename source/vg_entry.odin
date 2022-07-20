@@ -9,16 +9,29 @@ import glfw "vendor:glfw"
 window :: struct {
     win: glfw.WindowHandle,
     monitor_handle: glfw.MonitorHandle,
-    size:[2] i32,
-    pos:[2] i32,
+    size: [2]i32,
+    pos: [2]i32,
     col: v4,
-    mouse:[2] i32,
+    mouse: [2]f64,
+    last_mouse: [2]f64,
 };
 
 win: window;
 
 glfw_input :: proc(win: glfw.WindowHandle) {
-    
+    velocity: f32  = 4.5 * 0.016;
+    if (glfw.GetKey(win, glfw.KEY_W) == glfw.PRESS) {
+        scene_context.view.location = v3_add(scene_context.view.location, v3_multf(scene_context.view.front, velocity));
+    }
+    if (glfw.GetKey(win, glfw.KEY_S) == glfw.PRESS) {
+        scene_context.view.location = v3_sub(scene_context.view.location, v3_multf(scene_context.view.front, velocity));
+    }
+    if (glfw.GetKey(win,  glfw.KEY_D) == glfw.PRESS) {
+        scene_context.view.location = v3_add(scene_context.view.location, v3_multf(scene_context.view.right, velocity));
+    }
+    if (glfw.GetKey(win, glfw.KEY_A) == glfw.PRESS) {
+        scene_context.view.location = v3_sub(scene_context.view.location, v3_multf(scene_context.view.right, velocity));
+    }
 }
 
 glfw_window_size :: proc(win: glfw.WindowHandle, x, y: i32) {
@@ -26,8 +39,37 @@ glfw_window_size :: proc(win: glfw.WindowHandle, x, y: i32) {
 }
 
 glfw_mouse :: proc(glfw_win: glfw.WindowHandle, xpos, ypos: f64)  {
-    win.mouse[0] = cast(i32)xpos;
-    win.mouse[1] = cast(i32)ypos;
+    win.mouse[0] = xpos;
+    win.mouse[1] = ypos;
+    
+    /*(
+    if(win.last_mouse[0] == 0) {
+        win.last_mouse[0] = win.mouse[0];
+    }
+    if(win.last_mouse[1] == 0) {
+        win.last_mouse[1] = win.mouse[1];
+    }
+    
+    xoffset: f64 = win.mouse[0] - win.last_mouse[0];
+    yoffset: f64 = win.last_mouse[1] - win.mouse[1]; // reversed since y-coordinates go from bottom to top
+    
+    win.last_mouse[0] = win.mouse[0];
+    win.last_mouse[1] = win.mouse[1];
+    
+    xoffset *= 0.1;
+    yoffset *= 0.1;
+    
+    scene_context.view.yaw += xoffset;
+    scene_context.view.pitch += yoffset;
+    
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (scene_context.view.pitch > 89.0) {
+        scene_context.view.pitch= 89.0;
+    }
+    if (scene_context.view.pitch < -89.0) {
+        scene_context.view.pitch = -89.0;
+    }
+*/
 }
 
 glfw_error :: proc(err: i32, info: cstring) {

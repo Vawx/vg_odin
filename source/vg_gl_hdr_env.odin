@@ -72,7 +72,7 @@ hdr_context_init :: proc() {
     gl_set_int(&hdr_context.pbr, "irradianceMap", 0);
     gl_set_int(&hdr_context.pbr, "prefilterMap", 1);
     gl_set_int(&hdr_context.pbr, "brdfLUT", 2);
-    gl_set_v3(&hdr_context.pbr, "albedo", V3(0.5, 0.0, 0.0));
+    gl_set_v3(&hdr_context.pbr, "albedo", V3(1.0, 0, 0.0));
     gl_set_real(&hdr_context.pbr, "ao", 1.0);
     
     gl.UseProgram(hdr_context.background.program.id);

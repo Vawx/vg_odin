@@ -216,6 +216,13 @@ v3_mult :: proc(a: v3, b: v3) -> v3 {
     r.z = a.z * b.z;
     return r;
 }
+v3_multf :: proc(a: v3, b: f32) -> v3 {
+    r: v3;
+    r.x = a.x * b;
+    r.y = a.y * b;
+    r.z = a.z * b;
+    return r;
+}
 
 v3_div :: proc(a: v3, b: v3) -> v3 {
     r: v3;

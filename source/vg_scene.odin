@@ -8,8 +8,8 @@ view_context :: struct {
     front: v3,
     up: v3,
     right: v3,
-    yaw: f32,
-    pitch: f32,
+    yaw: f64,
+    pitch: f64,
     fov: f32,
     view: m4,
     projection: m4,
@@ -29,7 +29,7 @@ vg_scene_context :: struct {
 scene_context: vg_scene_context;
 
 vg_scene_context_init :: proc() {
-    scene_context.view.location = V3(0, 0, 20);
+    scene_context.view.location = V3(0, 0, 25);
     scene_context.view.yaw = -90;
     scene_context.view.pitch = 0;
     scene_context.view.fov = 40;
@@ -59,9 +59,9 @@ view_context_push_to :: proc(shader: ^gl_program) {
 
 view_context_transform :: proc() {
     scene_context.view.front = V3d(0);
-    scene_context.view.front.x = math.cos(math.to_radians(scene_context.view.yaw)) * math.cos(math.to_radians(scene_context.view.pitch));
-    scene_context.view.front.y = math.sin(math.to_radians(scene_context.view.pitch));
-    scene_context.view.front.z = math.sin(math.to_radians(scene_context.view.yaw)) * math.cos(math.to_radians(scene_context.view.pitch));
+    scene_context.view.front.x = cast(f32)math.cos(math.to_radians(scene_context.view.yaw)) * cast(f32)math.cos(math.to_radians(scene_context.view.pitch));
+    scene_context.view.front.y = cast(f32)math.sin(math.to_radians(scene_context.view.pitch));
+    scene_context.view.front.z = cast(f32) math.sin(math.to_radians(scene_context.view.yaw)) * cast(f32)math.cos(math.to_radians(scene_context.view.pitch));
     scene_context.view.front = v3_norm(scene_context.view.front);
     scene_context.view.right = v3_norm(v3_cross(scene_context.view.front, scene_context.view.up));
     scene_context.view.up = v3_norm(v3_cross(scene_context.view.right, scene_context.view.front));
@@ -85,6 +85,7 @@ scene_context_render :: proc() {
         view_context_push_to(&obj.program);
         gl_set_real(&obj.program, "metallic", 0.5);
         gl_set_real(&obj.program, "roughness", 0.5);
+        gl_set_v3(&obj.program, "camPos", scene_context.view.location);
         
         gl.ActiveTexture(gl.TEXTURE0);
         gl.BindTexture(gl.TEXTURE_CUBE_MAP, hdr_context.irradiance_map.id);
