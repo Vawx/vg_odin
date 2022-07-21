@@ -57,7 +57,7 @@ pushd %DefaultBuildDirectory%
 
 del *.obj /Q
 
-cl %DebugCompilerFlags% %DefaultSourceDirectory%vg_fetch.c /I %DefaultIncludeDirectory% /link %DefaultLinkerflags% /libpath:%DefaultLibDirectory%
+cl %ReleaseCompilerFlags% %DefaultSourceDirectory%vg_fetch.c /I %DefaultIncludeDirectory% /link %DefaultLinkerflags% /libpath:%DefaultLibDirectory%
 lib vg_fetch.obj
 
 pause

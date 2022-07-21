@@ -112,14 +112,7 @@ main :: proc() {
     desc: vg_fetch.sfetch_desc_t;
     vg_fetch.sfetch_setup(&desc);
     
-    i: u32 = size_of(vg_fetch.sfetch_response_t);
-    j: u32 = size_of(vg_fetch.sfetch_handle_t);
-    k: u32 = size_of(vg_fetch.sfetch_request_t);
-    l: u32 = size_of(vg_fetch.sfetch_desc_t);
-    m: u32 = size_of(b8);
-    
     buff: [2048]u8;
-    
     request: vg_fetch.sfetch_request_t;
     request.path = "D:/vgo/content/shaders/test.frag";
     request.callback = test_load;
