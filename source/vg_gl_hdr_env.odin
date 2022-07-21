@@ -84,13 +84,13 @@ hdr_context_init :: proc() {
     
     gl.BindFramebuffer(gl.FRAMEBUFFER, hdr_context.frame.fbo);
     gl.BindRenderbuffer(gl.RENDERBUFFER, hdr_context.frame.rbo);
-    hdr_context.frame.size = V2(512, 512);
+    hdr_context.frame.size = V2(2048, 2048);
     gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, auto_cast hdr_context.frame.size.x, auto_cast hdr_context.frame.size.y);
     gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, hdr_context.frame.rbo);
     
     // load HDR texture and bind
     stbi.set_flip_vertically_on_load(1);
-    data: ^f32 = stbi.loadf("D:/vgo/content/hdr/Newport_Loft_Ref.hdr", &hdr_context.hdr.w, &hdr_context.hdr.h, &hdr_context.hdr.n, 0);
+    data: ^f32 = stbi.loadf("D:/vgo/content/hdr/HDR_029_Sky_Cloudy_Ref.hdr", &hdr_context.hdr.w, &hdr_context.hdr.h, &hdr_context.hdr.n, 0);
     if(data != nil) {
         gl.GenTextures(1, &hdr_context.hdr.id);
         gl.BindTexture(gl.TEXTURE_2D, hdr_context.hdr.id);
@@ -104,7 +104,7 @@ hdr_context_init :: proc() {
         stbi.image_free(data);
     }
     // cubemap
-    hdr_context.cubemap.size = V2(512, 512);
+    hdr_context.cubemap.size = V2(2048, 2048);
     
     gl.GenTextures(1, &hdr_context.cubemap.id);
     gl.BindTexture(gl.TEXTURE_CUBE_MAP, hdr_context.cubemap.id);
@@ -156,7 +156,7 @@ hdr_context_init :: proc() {
     gl.GenerateMipmap(gl.TEXTURE_CUBE_MAP);
     
     // irradeiance cubemap
-    hdr_context.irradiance_map.size = V2(32, 32);
+    hdr_context.irradiance_map.size = V2(128, 128);
     
     gl.GenTextures(1, &hdr_context.irradiance_map.id);
     gl.BindTexture(gl.TEXTURE_CUBE_MAP, hdr_context.irradiance_map.id);

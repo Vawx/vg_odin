@@ -3,6 +3,7 @@ package vg
 import "core:fmt"
 import "core:math"
 import vg_fbx "vg_fbx"
+import vg_fetch "vg_fetch"
 import gl "vendor:OpenGL"
 import glfw "vendor:glfw"
 
@@ -14,23 +15,31 @@ window :: struct {
     col: v4,
     mouse: [2]f64,
     last_mouse: [2]f64,
+    cam: bool,
 };
 
 win: window;
 
-glfw_input :: proc(win: glfw.WindowHandle) {
+glfw_input :: proc(glfw_win: glfw.WindowHandle) {
     velocity: f32  = 4.5 * 0.016;
-    if (glfw.GetKey(win, glfw.KEY_W) == glfw.PRESS) {
+    if (glfw.GetKey(glfw_win, glfw.KEY_W) == glfw.PRESS) {
         scene_context.view.location = v3_add(scene_context.view.location, v3_multf(scene_context.view.front, velocity));
     }
-    if (glfw.GetKey(win, glfw.KEY_S) == glfw.PRESS) {
+    if (glfw.GetKey(glfw_win, glfw.KEY_S) == glfw.PRESS) {
         scene_context.view.location = v3_sub(scene_context.view.location, v3_multf(scene_context.view.front, velocity));
     }
-    if (glfw.GetKey(win,  glfw.KEY_D) == glfw.PRESS) {
+    if (glfw.GetKey(glfw_win,  glfw.KEY_D) == glfw.PRESS) {
         scene_context.view.location = v3_add(scene_context.view.location, v3_multf(scene_context.view.right, velocity));
     }
-    if (glfw.GetKey(win, glfw.KEY_A) == glfw.PRESS) {
+    if (glfw.GetKey(glfw_win, glfw.KEY_A) == glfw.PRESS) {
         scene_context.view.location = v3_sub(scene_context.view.location, v3_multf(scene_context.view.right, velocity));
+    }
+    
+    if (glfw.GetKey(glfw_win, glfw.KEY_LEFT_ALT) == glfw.PRESS) {
+        win.cam = true;
+    }
+    if (glfw.GetKey(glfw_win, glfw.KEY_LEFT_ALT) == glfw.RELEASE) {
+        win.cam = false;
     }
 }
 
@@ -42,38 +51,52 @@ glfw_mouse :: proc(glfw_win: glfw.WindowHandle, xpos, ypos: f64)  {
     win.mouse[0] = xpos;
     win.mouse[1] = ypos;
     
-    /*(
-    if(win.last_mouse[0] == 0) {
+    if(win.cam == true) {
+        if(win.last_mouse[0] == 0) {
+            win.last_mouse[0] = win.mouse[0];
+        }
+        if(win.last_mouse[1] == 0) {
+            win.last_mouse[1] = win.mouse[1];
+        }
+        
+        xoffset: f64 = win.mouse[0] - win.last_mouse[0];
+        yoffset: f64 = win.last_mouse[1] - win.mouse[1]; // reversed since y-coordinates go from bottom to top
+        
         win.last_mouse[0] = win.mouse[0];
-    }
-    if(win.last_mouse[1] == 0) {
         win.last_mouse[1] = win.mouse[1];
+        
+        xoffset *= 0.1;
+        yoffset *= 0.1;
+        
+        scene_context.view.yaw += xoffset;
+        //scene_context.view.pitch += yoffset;
+        
+        // make sure that when pitch is out of bounds, screen doesn't get flipped
+        if (scene_context.view.pitch > 89.0) {
+            scene_context.view.pitch= 89.0;
+        }
+        if (scene_context.view.pitch < -89.0) {
+            scene_context.view.pitch = -89.0;
+        }
     }
-    
-    xoffset: f64 = win.mouse[0] - win.last_mouse[0];
-    yoffset: f64 = win.last_mouse[1] - win.mouse[1]; // reversed since y-coordinates go from bottom to top
-    
-    win.last_mouse[0] = win.mouse[0];
-    win.last_mouse[1] = win.mouse[1];
-    
-    xoffset *= 0.1;
-    yoffset *= 0.1;
-    
-    scene_context.view.yaw += xoffset;
-    scene_context.view.pitch += yoffset;
-    
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (scene_context.view.pitch > 89.0) {
-        scene_context.view.pitch= 89.0;
-    }
-    if (scene_context.view.pitch < -89.0) {
-        scene_context.view.pitch = -89.0;
-    }
-*/
 }
 
 glfw_error :: proc(err: i32, info: cstring) {
     fmt.printf("error: %d, info: %s\n", err, info);
+}
+
+test_load :: proc(response: ^vg_fetch.sfetch_response_t) {
+    if(response.finished) {
+        fmt.println("finished");
+    } else {
+        fmt.println("not finished");
+    }
+    
+    if(response.fetched) {
+        fmt.println("fetched");
+    } else {
+        fmt.println("not fetched");
+    }
 }
 
 main :: proc() {
@@ -85,6 +108,24 @@ main :: proc() {
     vg_scene_context_init();
     
     glfw.Init();
+    
+    desc: vg_fetch.sfetch_desc_t;
+    vg_fetch.sfetch_setup(&desc);
+    
+    i: u32 = size_of(vg_fetch.sfetch_response_t);
+    j: u32 = size_of(vg_fetch.sfetch_handle_t);
+    k: u32 = size_of(vg_fetch.sfetch_request_t);
+    l: u32 = size_of(vg_fetch.sfetch_desc_t);
+    m: u32 = size_of(b8);
+    
+    buff: [2048]u8;
+    
+    request: vg_fetch.sfetch_request_t;
+    request.path = "D:/vgo/content/shaders/test.frag";
+    request.callback = test_load;
+    request.buffer_ptr = &buff[0];
+    request.buffer_size = 2048;
+    vg_fetch.sfetch_send(&request);
     
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3);
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3);
@@ -104,6 +145,7 @@ main :: proc() {
     gl.Enable(gl.DEPTH_TEST);
     gl.DepthFunc(gl.LEQUAL);
     gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS);
+    gl.Enable(gl.MULTISAMPLE);  
     
     hdr_context_init();
     
@@ -137,6 +179,7 @@ main :: proc() {
             break;
         }
         
+        vg_fetch.sfetch_dowork();
         glfw_input(win.win);
         
         scene_context_render();
@@ -145,5 +188,6 @@ main :: proc() {
         glfw.PollEvents();
     }
     
+    vg_fetch.sfetch_shutdown();
     glfw.Terminate();
 }
